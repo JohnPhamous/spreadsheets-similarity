@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script src="//unpkg.com/string-similarity/umd/string-similarity.min.js"></script>
+    <script>
+      const generatePairs = (all) => {
+        return [].concat(
+          ...all.map((v, i) => all.slice(i + 1).map((w) => [v, w]))
+        );
+      };
+
+      let matches = [];
+
+      const main = async () => {
+        const data = await fetch("./data.json");
+        const json = await data.json();
+
+        const CUTOFF_DATE = new Date("12/01/2020 16:11:39");
+        const recentBugs = json.filter(
+          (row) => new Date(row["Created On"]) > CUTOFF_DATE
+        );
+        const titles = recentBugs
+          .map((row) => row["Bug Title"])
+          .map((title) => title.replace("\n", " "));
+
+        titles.forEach((title) => {
+          const bestMatch = stringSimilarity.findBestMatch(
+            title,
+            titles.filter((t) => t !== title)
+          );
+
+          if (bestMatch.bestMatch.rating > 0.6) {
+            matches.push({
+              source: title,
+              target: bestMatch.bestMatch.target,
+              confident: bestMatch.bestMatch.rating,
+            });
+          }
+        });
+
+        console.log(Object.keys(matches).length);
+        const sortedMatches = matches.sort(
+          (a, b) => b.confidence - a.confidence
+        );
+        console.log(sortedMatches);
+      };
+
+      main();
+    </script>
+  </body>
+</html>
